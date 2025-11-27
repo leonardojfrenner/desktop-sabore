@@ -1,0 +1,12 @@
+Flask==2.3.3
+Flask-CORS==4.0.0
+requests==2.31.0
+python-dotenv==1.0.0
+beautifulsoup4==4.12.2
+lxml==4.9.3
+
+# Dependências de Teste
+pytest==7.4.3
+pytest-mock==3.12.0
+pytest-cov==4.1.0
+pyinstaller==6.16.0
