@@ -45,20 +45,31 @@ body {
     background-color: var(--color-bg-gray);
     color: var(--color-text-primary);
     font-size: 14px;
+    overflow-x: hidden; /* 🔥 Prevenir scroll horizontal */
+    width: 100%;
+    max-width: 100vw; /* Garantir que não ultrapasse a viewport */
 }
 
 .dashboard-container {
     display: flex;
     min-height: 100vh;
+    width: 100%;
+    max-width: 100vw; /* 🔥 Prevenir overflow horizontal */
+    overflow-x: hidden; /* 🔥 Prevenir scroll horizontal */
 }
 
 /* Sidebar */
 .sidebar {
     width: 240px;
+    min-width: 240px; /* 🔥 Largura mínima fixa */
+    max-width: 240px; /* 🔥 Largura máxima fixa */
     background: var(--color-bg-white);
     box-shadow: 2px 0 8px rgba(0,0,0,0.08);
     padding: 24px 0;
     position: relative;
+    flex-shrink: 0; /* 🔥 Não permitir que encolha */
+    overflow-x: hidden; /* 🔥 Prevenir overflow horizontal */
+    overflow-y: auto; /* 🔥 Permitir scroll vertical se necessário */
 }
 
 .sidebar-header {
@@ -71,32 +82,6 @@ body {
     font-weight: 700;
     color: var(--color-primary);
     text-align: center;
-}
-
-.restaurante-logo-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-}
-
-.restaurante-logo-img {
-    width: 60px;
-    height: 60px;
-    border-radius: 12px;
-    object-fit: cover;
-    border: 2px solid var(--color-border);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.restaurante-logo-container .logo {
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--color-text-primary);
-    margin-top: 4px;
-    word-break: break-word;
-    text-align: center;
-    line-height: 1.3;
 }
 
 .nav-menu {
@@ -158,6 +143,9 @@ body {
 .main-content {
     flex: 1;
     padding: 24px;
+    min-width: 0; /* 🔥 Permite que o flex item encolha */
+    max-width: 100%; /* 🔥 Prevenir overflow */
+    overflow-x: hidden; /* 🔥 Prevenir scroll horizontal */
 }
 
 .page-header {

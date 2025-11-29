@@ -265,8 +265,8 @@ function renderTable(filteredDishes = dishes) {
                     ${categoriaFormatada}
                 </span>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-500">${dish.descricao || '-'}</div>
+            <td class="px-6 py-4">
+                <div class="text-sm text-gray-500 descricao-cell" title="${(dish.descricao || '-').replace(/"/g, '&quot;').replace(/'/g, '&#39;')}">${dish.descricao || '-'}</div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
                 <span class="text-sm font-medium text-gray-900">R$ ${dish.preco.toFixed(2).replace('.', ',')}</span>
@@ -801,4 +801,3 @@ function inicializarCardapio() {
 }
 
 window.inicializarCardapio = inicializarCardapio;
-

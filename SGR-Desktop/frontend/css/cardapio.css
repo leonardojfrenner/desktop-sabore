@@ -7,6 +7,9 @@
     padding: 20px;
     margin-bottom: 20px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 100%; /* 🔥 Prevenir overflow */
+    box-sizing: border-box; /* 🔥 Incluir padding no cálculo da largura */
 }
 
 .kpi-grid {
@@ -84,6 +87,7 @@
 .dish-list table {
     width: 100%;
     border-collapse: collapse;
+    table-layout: auto;
 }
 .dish-list th {
     background-color: #F9FAFB; /* Cinza muito claro */
@@ -97,6 +101,68 @@
 .dish-list td {
     padding: 10px 12px;
     border-bottom: 1px solid #F3F4F6;
+    word-wrap: break-word;
+    max-width: 300px; /* Limitar largura máxima das células */
+}
+
+/* 🔥 CORREÇÃO: Prevenir overflow horizontal na tabela */
+.chart-section table {
+    width: 100%;
+    max-width: 100%;
+    table-layout: auto;
+}
+
+.chart-section .overflow-x-auto {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+}
+
+.chart-section table td,
+.chart-section table th {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* 🔥 CORREÇÃO: Célula de descrição com limite de largura e ellipsis */
+.chart-section table td .descricao-cell {
+    max-width: 300px; /* Largura máxima da descrição */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap; /* Uma linha apenas */
+    display: block;
+    cursor: help; /* Cursor indicando que há mais informação */
+    word-break: break-word; /* Quebrar palavras muito longas */
+}
+
+/* Hover: Mostrar descrição completa em tooltip */
+.chart-section table td .descricao-cell:hover {
+    position: relative;
+    z-index: 10;
+}
+
+/* Alternativa: Versão com múltiplas linhas (2 linhas máximo) */
+.chart-section table td .descricao-cell.multiline {
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal; /* Permite múltiplas linhas */
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* Limitar a 2 linhas */
+    line-clamp: 2; /* Propriedade padrão para compatibilidade */
+    -webkit-box-orient: vertical;
+    line-height: 1.4;
+    max-height: 2.8em; /* Aproximadamente 2 linhas */
+    word-break: break-word;
+}
+
+/* Garantir que a célula de descrição não ultrapasse os limites */
+.chart-section table tbody td:nth-child(5) {
+    max-width: 300px;
+    overflow: hidden;
+    position: relative;
 }
 
 /* Estilos baseados no arquivo de referência */
@@ -318,12 +384,15 @@
 }
 
 .search-input {
-    width: 240px;
+    width: 100%;
+    max-width: 320px; /* 🔥 Largura máxima responsiva */
+    min-width: 200px; /* 🔥 Largura mínima */
     padding: 8px 12px;
     border: 1px solid #D1D5DB;
     border-radius: 6px;
     font-size: 13px;
     transition: border-color 0.2s ease;
+    box-sizing: border-box;
 }
 
 .search-input:focus {

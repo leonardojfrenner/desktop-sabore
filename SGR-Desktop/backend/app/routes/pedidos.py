@@ -20,14 +20,11 @@ def get_pedidos_restaurante(restaurante_id):
         data_inicio = request.args.get('data_inicio')
         data_fim = request.args.get('data_fim')
 
-        print(f"\n{'='*60}")
-        print(f"[PEDIDOS-RESTAURANTE] Buscando pedidos para restaurante {restaurante_id}")
-        print(f"[PEDIDOS-RESTAURANTE] Filtro de status: {status}")
+        inicio_tempo = datetime.now()
+        print(f"[PEDIDOS-RESTAURANTE] Buscando pedidos para restaurante {restaurante_id} (status: {status or 'todos'})")
 
         try:
             status_code, response_data = proxy_request('GET', 'pedidos/restaurante')
-
-            print(f"[PEDIDOS-RESTAURANTE] Status code da API externa: {status_code}")
 
             if status_code != 200:
                 print(f"[PEDIDOS-RESTAURANTE] Erro ao buscar pedidos: {status_code}")
@@ -41,31 +38,32 @@ def get_pedidos_restaurante(restaurante_id):
                 if not isinstance(pedidos_todos, list):
                     pedidos_todos = []
 
-            print(f"[PEDIDOS-RESTAURANTE] Total de pedidos recebidos da API: {len(pedidos_todos)}")
+            print(f"[PEDIDOS-RESTAURANTE] Total de pedidos recebidos: {len(pedidos_todos)}")
 
-            if len(pedidos_todos) > 0:
-                primeiro_pedido = pedidos_todos[0]
-                print(f"[PEDIDOS-RESTAURANTE] Estrutura do primeiro pedido: {json.dumps(primeiro_pedido, indent=2, default=str)[:500]}")
-
+            # 🔥 OTIMIZAÇÃO: Filtrar mais eficientemente
             pedidos_filtrados = []
+            restaurante_id_int = int(restaurante_id)
+            status_upper = status.upper() if status else None
+            
             for pedido in pedidos_todos:
                 if not isinstance(pedido, dict):
                     continue
 
+                # Extrair restaurante_id de forma mais eficiente
                 pedido_restaurante_id = None
-                if pedido.get('restaurante') and isinstance(pedido.get('restaurante'), dict):
-                    pedido_restaurante_id = pedido['restaurante'].get('id')
+                restaurante_obj = pedido.get('restaurante')
+                if isinstance(restaurante_obj, dict):
+                    pedido_restaurante_id = restaurante_obj.get('id')
                 elif pedido.get('restaurante_id'):
                     pedido_restaurante_id = pedido['restaurante_id']
 
-                if pedido_restaurante_id and int(pedido_restaurante_id) != int(restaurante_id):
-                    print(f"[PEDIDOS-RESTAURANTE] Pedido {pedido.get('id')} - restaurante_id diferente: {pedido_restaurante_id} != {restaurante_id}")
+                # Filtrar por restaurante_id primeiro (mais rápido)
+                if pedido_restaurante_id and int(pedido_restaurante_id) != restaurante_id_int:
                     continue
 
-                if status:
+                # Filtrar por status se fornecido
+                if status_upper:
                     pedido_status = (pedido.get('status') or '').upper()
-                    status_upper = status.upper()
-
                     if status_upper in ['FINALIZADO', 'CONCLUIDO', 'CONCLUÍDO']:
                         if pedido_status not in ['FINALIZADO', 'CONCLUIDO', 'CONCLUÍDO']:
                             continue
@@ -107,22 +105,22 @@ def get_pedidos_restaurante(restaurante_id):
 
                 pedidos_filtrados.append(pedido)
 
-            print(f"[PEDIDOS-RESTAURANTE] Pedidos filtrados: {len(pedidos_filtrados)}")
-
+            # Ordenar por data (mais recente primeiro)
             pedidos_filtrados.sort(key=lambda pedido: (
                 pedido.get('criadoEm') or pedido.get('criado_em') or ''
             ), reverse=True)
 
             pedidos = pedidos_filtrados
+            
+            tempo_decorrido = (datetime.now() - inicio_tempo).total_seconds()
+            print(f"[PEDIDOS-RESTAURANTE] ✅ {len(pedidos)} pedidos filtrados em {tempo_decorrido:.2f}s")
 
         except Exception as exc:
-            print(f"[PEDIDOS-RESTAURANTE] Erro ao buscar pedidos da API externa: {exc}")
+            tempo_decorrido = (datetime.now() - inicio_tempo).total_seconds()
+            print(f"[PEDIDOS-RESTAURANTE] ❌ Erro após {tempo_decorrido:.2f}s: {exc}")
             import traceback
-
             print(f"[DEBUG] Traceback: {traceback.format_exc()}")
             pedidos = []
-
-        print(f"[PEDIDOS-RESTAURANTE] Retornando {len(pedidos)} pedidos para restaurante {restaurante_id}")
 
         if not pedidos:
             hoje = datetime.now()

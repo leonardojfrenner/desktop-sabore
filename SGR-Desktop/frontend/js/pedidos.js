@@ -17,7 +17,9 @@ const PedidosApp = {
         filtros: {
             status: '',
             data: ''
-        }
+        },
+        ultimaAtualizacao: null,
+        cacheValido: false
     },
 
     // =============================
@@ -27,11 +29,77 @@ const PedidosApp = {
     init() {
         console.log('🎯 Inicializando PedidosApp...');
         
+        // 🔥 CORREÇÃO: Limpar estado e listeners antigos antes de reinicializar
+        this.limpar();
+        
         // Sempre reconfigurar ao iniciar (pode mudar de página)
         this.obterRestauranteId();
         this.configurarElementos();
         this.configurarEventos();
         this.carregarPedidos();
+    },
+    
+    limpar() {
+        console.log('🧹 Limpando estado anterior do PedidosApp...');
+        
+        // Remover event listeners antigos (se elementos ainda existirem)
+        if (this._eventHandlers && this.config.elementos) {
+            const { elementos } = this.config;
+            
+            try {
+                if (elementos.statusFilter && this._eventHandlers.onStatusFilterChange) {
+                    elementos.statusFilter.removeEventListener('change', this._eventHandlers.onStatusFilterChange);
+                }
+                if (elementos.dataFilter && this._eventHandlers.onDataFilterChange) {
+                    elementos.dataFilter.removeEventListener('change', this._eventHandlers.onDataFilterChange);
+                }
+                if (elementos.limparFiltros && this._eventHandlers.onLimparClick) {
+                    elementos.limparFiltros.removeEventListener('click', this._eventHandlers.onLimparClick);
+                }
+                if (elementos.atualizarPedidos && this._eventHandlers.onAtualizarClick) {
+                    elementos.atualizarPedidos.removeEventListener('click', this._eventHandlers.onAtualizarClick);
+                }
+                if (elementos.fecharModal && this._eventHandlers.onFecharModalClick) {
+                    elementos.fecharModal.removeEventListener('click', this._eventHandlers.onFecharModalClick);
+                }
+                if (elementos.modal && this._eventHandlers.onModalClick) {
+                    elementos.modal.removeEventListener('click', this._eventHandlers.onModalClick);
+                }
+                if (elementos.atualizarStatus && this._eventHandlers.onAtualizarStatusClick) {
+                    elementos.atualizarStatus.removeEventListener('click', this._eventHandlers.onAtualizarStatusClick);
+                }
+            } catch (error) {
+                console.warn('⚠️ Erro ao remover event listeners (elementos podem não existir mais):', error);
+            }
+        }
+        
+        // Remover listener de escape se existir
+        if (this._escapeListener) {
+            try {
+                document.removeEventListener('keydown', this._escapeListener);
+            } catch (error) {
+                console.warn('⚠️ Erro ao remover listener de escape:', error);
+            }
+            this._escapeListener = null;
+        }
+        
+        // Limpar estado (mas manter restaurante_id)
+        const restauranteId = this.config.restaurante_id;
+        this.state = {
+            pedidos: [],
+            pedidoAtual: null,
+            filtros: {
+                status: '',
+                data: ''
+            },
+            ultimaAtualizacao: null,
+            cacheValido: false
+        };
+        this.config.restaurante_id = restauranteId;
+        this.config.elementos = {};
+        this._eventHandlers = null;
+        
+        console.log('✅ Limpeza concluída');
     },
 
     obterRestauranteId() {
@@ -85,8 +153,25 @@ const PedidosApp = {
         
         // Verificar se elementos críticos existem
         if (!elementosConfig.statusFilter || !elementosConfig.tableBody) {
-            console.error('❌ Elementos DOM não encontrados. Aguardando...');
-            setTimeout(() => this.configurarElementos(), 100);
+            console.warn('⚠️ Elementos DOM não encontrados. Aguardando...');
+            // 🔥 CORREÇÃO: Tentar novamente com mais tentativas
+            let tentativas = 0;
+            const maxTentativas = 10;
+            const verificarElementos = () => {
+                tentativas++;
+                if (tentativas > maxTentativas) {
+                    console.error('❌ Elementos DOM não encontrados após', maxTentativas, 'tentativas');
+                    return;
+                }
+                const statusFilter = document.getElementById('statusFilter');
+                const tableBody = document.getElementById('pedidosTableBody');
+                if (statusFilter && tableBody) {
+                    this.configurarElementos();
+                } else {
+                    setTimeout(verificarElementos, 100);
+                }
+            };
+            setTimeout(verificarElementos, 100);
             return;
         }
         
@@ -109,7 +194,7 @@ const PedidosApp = {
             onStatusFilterChange: () => this.aplicarFiltros(),
             onDataFilterChange: () => this.aplicarFiltros(),
             onLimparClick: () => this.limparFiltros(),
-            onAtualizarClick: () => this.carregarPedidos(),
+            onAtualizarClick: () => this.carregarPedidos(true), // Forçar atualização
             onFecharModalClick: () => this.fecharModal(),
             onModalClick: (e) => {
                 if (e.target === elementos.modal) this.fecharModal();
@@ -149,7 +234,22 @@ const PedidosApp = {
     // CARREGAMENTO DE DADOS
     // =============================
     
-    async carregarPedidos() {
+    async carregarPedidos(forcarAtualizacao = false) {
+        const inicioTempo = Date.now();
+        console.log('[PEDIDOS] Iniciando carregamento de pedidos...');
+        
+        // 🔥 OTIMIZAÇÃO: Cache simples - se dados foram carregados há menos de 5 segundos, usar cache
+        const agora = Date.now();
+        const tempoDesdeUltimaAtualizacao = this.state.ultimaAtualizacao ? (agora - this.state.ultimaAtualizacao) : Infinity;
+        const CACHE_TEMPO = 5000; // 5 segundos
+        
+        if (!forcarAtualizacao && this.state.cacheValido && tempoDesdeUltimaAtualizacao < CACHE_TEMPO && this.state.pedidos.length > 0) {
+            console.log('[PEDIDOS] Usando cache (última atualização há', Math.round(tempoDesdeUltimaAtualizacao / 1000), 'segundos)');
+            this.renderizarPedidos();
+            this.atualizarKPIs();
+            return;
+        }
+        
         try {
             this.mostrarLoading(true);
             
@@ -163,23 +263,60 @@ const PedidosApp = {
             }
             
             const url = `${this.config.API_BASE_URL}/pedidos/restaurante/${this.config.restaurante_id}?${params}`;
-            const response = await fetch(url);
-        
-        if (!response.ok) {
-                throw new Error(`Erro HTTP: ${response.status}`);
+            console.log('[PEDIDOS] URL da requisição:', url);
+            
+            // 🔥 OTIMIZAÇÃO: Adicionar timeout de 30 segundos e AbortController
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                const tempoDecorrido = Date.now() - inicioTempo;
+                console.log(`[PEDIDOS] Resposta recebida em ${tempoDecorrido}ms - Status: ${response.status}`);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('[PEDIDOS] Erro na resposta:', errorText);
+                    throw new Error(`Erro HTTP: ${response.status} - ${errorText.substring(0, 100)}`);
+                }
+                
+                const data = await response.json();
+                const tempoTotal = Date.now() - inicioTempo;
+                console.log(`[PEDIDOS] Dados parseados em ${tempoTotal}ms - Total de pedidos: ${data.data?.length || 0}`);
+                
+                if (data.status === 'success') {
+                    this.state.pedidos = data.data || [];
+                    this.state.ultimaAtualizacao = Date.now();
+                    this.state.cacheValido = true;
+                    console.log(`[PEDIDOS] Renderizando ${this.state.pedidos.length} pedidos...`);
+                    this.renderizarPedidos();
+                    this.atualizarKPIs();
+                    console.log(`[PEDIDOS] ✅ Carregamento completo em ${tempoTotal}ms`);
+                } else {
+                    throw new Error(data.message || 'Erro ao carregar pedidos');
+                }
+                
+            } catch (fetchError) {
+                clearTimeout(timeoutId);
+                
+                if (fetchError.name === 'AbortError') {
+                    throw new Error('Tempo limite excedido. A requisição demorou mais de 30 segundos.');
+                }
+                throw fetchError;
             }
             
-            const data = await response.json();
-            
-            if (data.status === 'success') {
-                this.state.pedidos = data.data;
-                this.renderizarPedidos();
-                this.atualizarKPIs();
-            } else {
-                throw new Error(data.message || 'Erro ao carregar pedidos');
-            }
-            
-    } catch (error) {
+        } catch (error) {
+            const tempoTotal = Date.now() - inicioTempo;
+            console.error(`[PEDIDOS] Erro após ${tempoTotal}ms:`, error);
             this.mostrarErro(`Erro ao carregar pedidos: ${error.message}`);
             this.state.pedidos = [];
             this.renderizarPedidos();
@@ -558,11 +695,32 @@ const PedidosApp = {
     },
 
     mostrarLoading(mostrar) {
-        const { loadingState } = this.config.elementos;
+        const { loadingState, tableBody } = this.config.elementos;
         
         if (mostrar) {
             loadingState.classList.remove('hidden');
-            } else {
+            loadingState.innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <div style="display: inline-block; width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #3b82f6; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                    <p style="margin-top: 16px; color: #6b7280; font-size: 14px;">Carregando pedidos...</p>
+                </div>
+            `;
+            // Adicionar animação CSS se não existir
+            if (!document.getElementById('pedidos-spinner-style')) {
+                const style = document.createElement('style');
+                style.id = 'pedidos-spinner-style';
+                style.textContent = `
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            if (tableBody) {
+                tableBody.innerHTML = '';
+            }
+        } else {
             loadingState.classList.add('hidden');
         }
     },

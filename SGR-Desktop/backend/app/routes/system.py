@@ -130,6 +130,34 @@ def get_restaurante_detalhes(restaurante_id):
         return jsonify({'status': 'error', 'message': str(exc)}), 500
 
 
+@system_bp.route('/api/restaurantes/<int:restaurante_id>', methods=['PUT'])
+def update_restaurante(restaurante_id):
+    """Atualiza dados de um restaurante - Proxy para API externa."""
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'status': 'error', 'message': 'Dados não fornecidos'}), 400
+        
+        print(f"[PROXY] Atualizando restaurante ID: {restaurante_id}")
+        
+        # Remover campos que não podem ser alterados
+        data.pop('cnpj', None)
+        data.pop('aceitaComunicacao', None)
+        data.pop('aceitaMarketing', None)
+        data.pop('aceitaProtecaoDados', None)
+        
+        status_code, response_data = proxy_request('PUT', f'restaurantes/{restaurante_id}', data=data)
+        
+        return jsonify(response_data), status_code
+    except Exception as exc:
+        print(f"[ERRO] Erro ao atualizar restaurante: {exc}")
+        import traceback
+        
+        print(f"[DEBUG] Traceback: {traceback.format_exc()}")
+        return jsonify({'status': 'error', 'message': str(exc)}), 500
+
+
 @system_bp.route('/api/restaurantes/login', methods=['POST'])
 def restaurante_login():
     """Login de restaurante - Proxy para API externa (/restaurantes/login)."""
@@ -205,6 +233,122 @@ def restaurante_login():
 
         print(f"[DEBUG] Traceback: {traceback.format_exc()}")
         return jsonify({'status': 'error', 'message': str(exc)}), 500
+
+
+@system_bp.route('/api/restaurantes/upload/<tipo>', methods=['POST'])
+def upload_restaurante_imagem(tipo):
+    """Rota para fazer upload de arquivo do restaurante por tipo (logo, banner, cardapio) - Proxy para API Java."""
+    try:
+        # Verificar se há arquivo no request
+        if 'file' not in request.files:
+            return jsonify({'status': 'error', 'message': 'Nenhum arquivo enviado'}), 400
+        
+        arquivo = request.files.get('file')
+        
+        if not arquivo or arquivo.filename == '':
+            return jsonify({'status': 'error', 'message': 'Nenhum arquivo selecionado'}), 400
+        
+        # Validar tipo de arquivo baseado no tipo de upload
+        if tipo == 'cardapio':
+            # Para cardápio, aceitar apenas PDF
+            if not arquivo.filename.lower().endswith('.pdf'):
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Formato de arquivo não permitido. Use: PDF'
+                }), 400
+        else:
+            # Para logo e banner, aceitar apenas imagens
+            if not allowed_file(arquivo.filename):
+                return jsonify({
+                    'status': 'error',
+                    'message': f'Formato de arquivo não permitido. Use: {", ".join(ALLOWED_EXTENSIONS)}'
+                }), 400
+        
+        # Verificar tamanho do arquivo (10MB para PDF, 5MB para imagens)
+        max_size = 10 * 1024 * 1024 if tipo == 'cardapio' else MAX_FILE_SIZE
+        arquivo.seek(0, os.SEEK_END)
+        tamanho = arquivo.tell()
+        arquivo.seek(0)
+        
+        if tamanho > max_size:
+            return jsonify({
+                'status': 'error',
+                'message': f'Arquivo muito grande. Tamanho máximo: {max_size / (1024*1024):.1f}MB'
+            }), 400
+        
+        print(f"[UPLOAD] Fazendo proxy de upload para API Java: {arquivo.filename} ({tamanho} bytes) - Tipo: {tipo}")
+        
+        # Fazer proxy para a API Java
+        url_api = f"{API_EXTERNA_BASE_URL}restaurantes/upload/{tipo}"
+        
+        # Resetar posição do arquivo após verificação de tamanho
+        arquivo.seek(0)
+        
+        # Ler conteúdo do arquivo para enviar
+        arquivo_content = arquivo.read()
+        arquivo.seek(0)
+        
+        # Preparar headers
+        headers = {
+            'User-Agent': 'SGR-Desktop-Flask-Proxy/1.0',
+            'Origin': 'http://localhost:5000',
+        }
+        
+        # Adicionar cookies da sessão
+        if len(api_session.cookies) > 0:
+            cookie_header = '; '.join([f"{name}={value}" for name, value in api_session.cookies.items()])
+            headers['Cookie'] = cookie_header
+        
+        # Preparar arquivo para multipart/form-data
+        files = {'file': (arquivo.filename, arquivo_content, arquivo.content_type)}
+        
+        # Fazer requisição para API Java
+        response = api_session.post(
+            url_api,
+            files=files,
+            headers=headers,
+            timeout=API_TIMEOUT
+        )
+        
+        print(f"[UPLOAD] Resposta da API Java: Status {response.status_code}")
+        
+        if response.status_code == 200:
+            try:
+                response_data = response.json()
+                url_imagem = response_data.get('url', '')
+                
+                print(f"[UPLOAD] Upload bem-sucedido. URL: {url_imagem}")
+                
+                return jsonify({
+                    'status': 'success',
+                    'message': f'{tipo.capitalize()} enviada com sucesso',
+                    'url': url_imagem
+                }), 200
+            except Exception as e:
+                print(f"[UPLOAD] Erro ao parsear resposta JSON: {e}")
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Erro ao processar resposta do servidor'
+                }), 500
+        else:
+            error_msg = f'Erro no upload: Status {response.status_code}'
+            try:
+                error_data = response.json()
+                error_msg = error_data.get('message', error_msg)
+            except Exception:
+                error_msg = response.text[:200] if response.text else error_msg
+            
+            print(f"[UPLOAD] Erro: {error_msg}")
+            return jsonify({
+                'status': 'error',
+                'message': error_msg
+            }), response.status_code
+        
+    except Exception as exc:
+        print(f"[ERRO] Erro ao fazer upload: {exc}")
+        import traceback
+        print(f"[DEBUG] Traceback: {traceback.format_exc()}")
+        return jsonify({'status': 'error', 'message': f'Erro ao fazer upload: {str(exc)}'}), 500
 
 
 @system_bp.route('/api/upload/imagem', methods=['POST'])

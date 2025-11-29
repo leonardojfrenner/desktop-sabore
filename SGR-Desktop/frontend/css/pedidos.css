@@ -17,6 +17,14 @@
     flex-wrap: wrap;
 }
 
+/* Garantir que os botões na seção de filtros sejam sempre visíveis */
+.filters-container .btn-primary,
+.filters-container .btn-secondary {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
 .filter-group {
     display: flex;
     align-items: center;

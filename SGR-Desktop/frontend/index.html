@@ -48,10 +48,7 @@
         <!-- Sidebar -->
         <nav class="sidebar">
             <div class="sidebar-header">
-                <div id="restauranteLogo" class="restaurante-logo-container">
-                    <img id="restauranteImagem" src="" alt="Logo do Restaurante" class="restaurante-logo-img" style="display: none;">
-                    <div id="restauranteNome" class="logo">Carregando...</div>
-                </div>
+                <div id="restauranteNome" class="logo">Carregando...</div>
             </div>
 
             <div class="nav-menu">
@@ -75,6 +72,10 @@
                 <a href="#" class="nav-item" onclick="loadPage('pedidos')">
                     <span class="nav-icon">🛎️</span>
                     Gestão de Pedidos
+                </a>
+                <a href="#" class="nav-item" onclick="loadPage('perfil')">
+                    <span class="nav-icon">👤</span>
+                    Perfil
                 </a>
             </div>
             
@@ -399,16 +400,42 @@
                         executeScriptsFromHTML(pedidosHTML, (scriptsCount) => {
                             console.log(`🎯 Pedidos: ${scriptsCount} scripts executados, iniciando carregamento...`);
                             
-                            // 🔥 CORREÇÃO: Aguardar scripts carregarem e inicializar
+                            // 🔥 CORREÇÃO: Sempre reinicializar quando a página é carregada
                             setTimeout(() => {
                                 if (typeof PedidosApp !== 'undefined' && typeof PedidosApp.init === 'function') {
-                                    console.log('🎯 Inicializando Pedidos após execução sequencial de scripts');
-                                    // Verificar se já foi inicializado
-                                    if (!PedidosApp.config.restaurante_id) {
-                                        PedidosApp.init();
-                                    }
+                                    console.log('🎯 Reinicializando Pedidos após execução sequencial de scripts');
+                                    // Sempre chamar init() para garantir limpeza e reinicialização correta
+                                    PedidosApp.init();
+                                } else {
+                                    console.error('❌ PedidosApp não encontrado após carregar scripts');
                                 }
-                            }, 100);
+                            }, 200); // Aumentar tempo para garantir que DOM está pronto
+                        });
+                        
+                        break;
+                        
+                    case 'perfil':
+                        // Carregar CSS do perfil
+                        loadCSS('css/perfil.css');
+                        
+                        // Carregar HTML do perfil
+                        console.log('🔄 Tentando carregar perfil.html...');
+                        const perfilHTML = await loadHTMLFile('paginas/perfil.html');
+                        console.log('✅ Perfil HTML carregado com sucesso');
+                        pageContent.innerHTML = perfilHTML;
+                        
+                        // 🔥 CORREÇÃO CRÍTICA: Executar scripts do HTML carregado SEQUENCIALMENTE
+                        executeScriptsFromHTML(perfilHTML, (scriptsCount) => {
+                            console.log(`🎯 Perfil: ${scriptsCount} scripts executados, iniciando carregamento...`);
+                            
+                            setTimeout(() => {
+                                if (typeof inicializarPerfil === 'function') {
+                                    console.log('🎯 Inicializando Perfil após execução sequencial de scripts');
+                                    inicializarPerfil();
+                                } else {
+                                    console.warn('⚠️ Função inicializarPerfil não encontrada após execução de scripts');
+                                }
+                            }, 200);
                         });
                         
                         break;
@@ -520,7 +547,7 @@
 
         // Definir API_BASE_URL se não estiver definido
         window.API_BASE_URL = window.API_BASE_URL || 'http://localhost:5000/api';
-        
+
         // Função para carregar informações do restaurante
         async function carregarInfoRestaurante() {
             try {
@@ -556,17 +583,14 @@
                 if (response.ok) {
                     const data = await response.json();
                     
-                    // Extrair nome e imagem do restaurante
+                    // Extrair nome do restaurante
                     let nomeRestaurante = null;
-                    let imagemRestaurante = null;
                     
                     // Tentar diferentes formatos de resposta
-                    if (data.data) {
+                    if (data.status === 'success' && data.data) {
                         nomeRestaurante = data.data.nome || data.data.restaurante_nome;
-                        imagemRestaurante = data.data.imagemUrl || data.data.imagem_url || data.data.logoUrl || data.data.logo_url || data.data.fotoUrl || data.data.foto_url;
                     } else if (data.nome) {
                         nomeRestaurante = data.nome;
-                        imagemRestaurante = data.imagemUrl || data.imagem_url || data.logoUrl || data.logo_url || data.fotoUrl || data.foto_url;
                     }
                     
                     // Se não encontrou, usar do localStorage
@@ -580,82 +604,35 @@
                         nomeElement.textContent = nomeRestaurante || 'Restaurante';
                     }
                     
-                    // Atualizar imagem se houver
-                    const imagemElement = document.getElementById('restauranteImagem');
-                    if (imagemRestaurante && imagemElement) {
-                        imagemElement.src = imagemRestaurante;
-                        imagemElement.style.display = 'block';
-                        imagemElement.onerror = function() {
-                            // Se a imagem falhar ao carregar, esconder
-                            console.warn('⚠️ Erro ao carregar imagem do restaurante:', imagemRestaurante);
-                            this.style.display = 'none';
-                        };
-                        imagemElement.onload = function() {
-                            console.log('✅ Imagem do restaurante carregada com sucesso');
-                        };
-                    } else if (imagemElement) {
-                        // Tentar usar imagem salva no localStorage
-                        const imagemSalva = localStorage.getItem('restaurante_imagem');
-                        if (imagemSalva) {
-                            imagemElement.src = imagemSalva;
-                            imagemElement.style.display = 'block';
-                        } else {
-                            imagemElement.style.display = 'none';
-                        }
-                    }
-                    
                     // Salvar no localStorage para uso futuro
                     if (nomeRestaurante) {
                         localStorage.setItem('restaurante_nome', nomeRestaurante);
                     }
-                    if (imagemRestaurante) {
-                        localStorage.setItem('restaurante_imagem', imagemRestaurante);
-                    }
                     
-                    console.log('✅ Informações do restaurante carregadas:', { nome: nomeRestaurante, imagem: imagemRestaurante });
+                    console.log('✅ Informações do restaurante carregadas:', { nome: nomeRestaurante });
                 } else {
                     // Usar dados do localStorage como fallback
                     const nomeSalvo = localStorage.getItem('restaurante_nome');
-                    const imagemSalva = localStorage.getItem('restaurante_imagem');
-                    
                     const nomeElement = document.getElementById('restauranteNome');
                     if (nomeSalvo && nomeElement) {
                         nomeElement.textContent = nomeSalvo;
                     } else if (nomeElement) {
                         nomeElement.textContent = 'Restaurante';
                     }
-                    
-                    const imagemElement = document.getElementById('restauranteImagem');
-                    if (imagemSalva && imagemElement) {
-                        imagemElement.src = imagemSalva;
-                        imagemElement.style.display = 'block';
-                    } else if (imagemElement) {
-                        imagemElement.style.display = 'none';
-                    }
                 }
             } catch (error) {
                 console.error('❌ Erro ao carregar informações do restaurante:', error);
                 // Usar dados do localStorage como fallback
                 const nomeSalvo = localStorage.getItem('restaurante_nome');
-                const imagemSalva = localStorage.getItem('restaurante_imagem');
-                
                 const nomeElement = document.getElementById('restauranteNome');
                 if (nomeSalvo && nomeElement) {
                     nomeElement.textContent = nomeSalvo;
                 } else if (nomeElement) {
                     nomeElement.textContent = 'Restaurante';
                 }
-                
-                const imagemElement = document.getElementById('restauranteImagem');
-                if (imagemSalva && imagemElement) {
-                    imagemElement.src = imagemSalva;
-                    imagemElement.style.display = 'block';
-                } else if (imagemElement) {
-                    imagemElement.style.display = 'none';
-                }
             }
         }
-        
+
         // Carregar dashboard por padrão quando a página carregar
         document.addEventListener('DOMContentLoaded', () => {
             showDebugLog('Página principal carregada, carregando dashboard...', 'info');

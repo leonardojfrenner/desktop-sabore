@@ -20,9 +20,9 @@ def listar_cardapio(restaurante_id):
     try:
         print(f"[CARDAPIO] Listando cardápio para restaurante {restaurante_id}")
 
-        params = {'restaurante_id': restaurante_id}
-
-        status_code, response_data = proxy_request('GET', f'cardapio/{restaurante_id}', params=params)
+        # 🔥 CORREÇÃO: Não precisa passar params, o endpoint já tem o restaurante_id na URL
+        # O mapeamento converte cardapio/{id} para itens/restaurante/{id}
+        status_code, response_data = proxy_request('GET', f'cardapio/{restaurante_id}', params=None)
 
         print(f"[CARDAPIO] Resposta da API externa (GET): Status {status_code}")
         print(f"[CARDAPIO] Tipo de resposta: {type(response_data)}")
@@ -68,6 +68,55 @@ def listar_cardapio(restaurante_id):
 
         print(f"[ERRO] Traceback: {traceback.format_exc()}")
         return jsonify({'status': 'error', 'message': f'Falha ao listar o cardápio: {str(exc)}'}), 500
+
+
+@cardapio_bp.route('/api/cardapio/item/<int:item_id>', methods=['GET'])
+def buscar_item_por_id(item_id):
+    """Rota para buscar um item específico do cardápio por ID - Proxy para API externa."""
+    try:
+        print(f"[CARDAPIO] Buscando item {item_id}")
+
+        # A API Java tem GET /itens/{id} conforme o controller
+        status_code, response_data = proxy_request('GET', f'itens/{item_id}', params=None)
+
+        print(f"[CARDAPIO] Resposta da API externa (GET item): Status {status_code}")
+        print(f"[CARDAPIO] Tipo de resposta: {type(response_data)}")
+
+        if 200 <= status_code < 300:
+            if isinstance(response_data, dict):
+                print("[CARDAPIO] Item encontrado")
+                return jsonify({'status': 'success', 'data': response_data}), 200
+            if isinstance(response_data, list) and len(response_data) > 0:
+                print("[CARDAPIO] Resposta é lista, retornando primeiro item")
+                return jsonify({'status': 'success', 'data': response_data[0]}), 200
+
+            print(f"[CARDAPIO] AVISO: Formato de resposta inesperado: {type(response_data)}")
+            return jsonify({'status': 'error', 'message': 'Item não encontrado'}), 404
+
+        if status_code == 404:
+            return jsonify({'status': 'error', 'message': 'Item não encontrado'}), 404
+
+        if status_code in (401, 403):
+            error_msg = (
+                response_data.get('message', 'Sessão expirada. Faça login novamente.')
+                if isinstance(response_data, dict)
+                else str(response_data)
+            )
+            return jsonify({'status': 'error', 'message': error_msg}), status_code
+
+        return jsonify({
+            'status': 'error',
+            'message': response_data.get('message', 'Erro ao buscar item')
+            if isinstance(response_data, dict)
+            else 'Erro ao buscar item',
+        }), status_code
+
+    except Exception as exc:
+        print(f"[ERRO] Erro ao buscar item: {exc}")
+        import traceback
+
+        print(f"[ERRO] Traceback: {traceback.format_exc()}")
+        return jsonify({'status': 'error', 'message': f'Falha ao buscar item: {str(exc)}'}), 500
 
 
 @cardapio_bp.route('/api/cardapio/add', methods=['POST'])

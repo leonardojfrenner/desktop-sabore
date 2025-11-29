@@ -1,0 +1,242 @@
+<!-- Sistema de Perfil Section -->
+<div id="perfilSection" class="section active">
+    <div class="page-header">
+        <h1 class="page-title">👤 Perfil do Restaurante</h1>
+        <p class="page-subtitle">Gerencie as informações do seu restaurante</p>
+    </div>
+
+    <!-- Formulário de Perfil -->
+    <div class="chart-section">
+        <form id="perfilForm" class="perfil-form">
+            <!-- Informações Básicas -->
+            <div class="form-section">
+                <h2 class="form-section-title">📋 Informações Básicas</h2>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="nomeRestaurante" class="form-label">Nome do Restaurante *</label>
+                        <input type="text" id="nomeRestaurante" name="nome" class="form-input" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="cnpjRestaurante" class="form-label">CNPJ</label>
+                        <input type="text" id="cnpjRestaurante" name="cnpj" class="form-input" readonly disabled>
+                        <small class="form-help-text">CNPJ não pode ser alterado</small>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="telefoneRestaurante" class="form-label">Telefone</label>
+                        <input type="tel" id="telefoneRestaurante" name="telefone" class="form-input" placeholder="(00) 00000-0000">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="emailRestaurante" class="form-label">E-mail *</label>
+                        <input type="email" id="emailRestaurante" name="email" class="form-input" required>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Endereço -->
+            <div class="form-section">
+                <h2 class="form-section-title">📍 Endereço</h2>
+                
+                <div class="form-row">
+                    <div class="form-group flex-2">
+                        <label for="ruaRestaurante" class="form-label">Rua</label>
+                        <input type="text" id="ruaRestaurante" name="rua" class="form-input">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="numeroRestaurante" class="form-label">Número</label>
+                        <input type="number" id="numeroRestaurante" name="numero" class="form-input" min="0">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="bairroRestaurante" class="form-label">Bairro</label>
+                        <input type="text" id="bairroRestaurante" name="bairro" class="form-input">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="cidadeRestaurante" class="form-label">Cidade</label>
+                        <input type="text" id="cidadeRestaurante" name="cidade" class="form-input">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="estadoRestaurante" class="form-label">Estado</label>
+                        <input type="text" id="estadoRestaurante" name="estado" class="form-input" maxlength="2" placeholder="UF">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="cepRestaurante" class="form-label">CEP</label>
+                        <input type="text" id="cepRestaurante" name="cep" class="form-input" placeholder="00000-000">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Descrição e Horários -->
+            <div class="form-section">
+                <h2 class="form-section-title">📝 Descrição e Informações</h2>
+                
+                <div class="form-group">
+                    <label for="descricaoRestaurante" class="form-label">Descrição</label>
+                    <textarea id="descricaoRestaurante" name="descricao" class="form-textarea" rows="4" placeholder="Descreva seu restaurante..."></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="horarioRestaurante" class="form-label">Horário de Funcionamento</label>
+                        <input type="text" id="horarioRestaurante" name="horario" class="form-input" placeholder="Ex: Seg-Sex: 11h-22h">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="lotacaoRestaurante" class="form-label">Lotação Máxima</label>
+                        <input type="number" id="lotacaoRestaurante" name="lotacao" class="form-input" min="0" placeholder="Número de lugares">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Redes Sociais -->
+            <div class="form-section">
+                <h2 class="form-section-title">🌐 Redes Sociais e Contatos</h2>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="siteRestaurante" class="form-label">Site</label>
+                        <input type="url" id="siteRestaurante" name="site" class="form-input" placeholder="https://exemplo.com">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="facebookRestaurante" class="form-label">Facebook</label>
+                        <input type="url" id="facebookRestaurante" name="facebook" class="form-input" placeholder="https://facebook.com/exemplo">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="instagramRestaurante" class="form-label">Instagram</label>
+                        <input type="url" id="instagramRestaurante" name="instagram" class="form-input" placeholder="https://instagram.com/exemplo">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="whatsappRestaurante" class="form-label">WhatsApp</label>
+                        <input type="text" id="whatsappRestaurante" name="whatsapp" class="form-input" placeholder="(00) 00000-0000">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Imagens -->
+            <div class="form-section">
+                <h2 class="form-section-title">🖼️ Imagens</h2>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="logoRestaurante" class="form-label">Logo</label>
+                        <input type="file" id="logoRestaurante" name="logo" accept="image/*" class="form-input-file">
+                        <div id="logoPreview" class="imagem-preview-container" style="display: none;">
+                            <img id="logoPreviewImg" src="" alt="Logo Preview" class="imagem-preview">
+                            <button type="button" id="removerLogo" class="btn-remover-imagem">✕ Remover</button>
+                        </div>
+                        <p class="form-help-text">Ou cole uma URL:</p>
+                        <input type="url" id="logoUrlInput" name="logoUrl" class="form-input" placeholder="https://exemplo.com/logo.jpg">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="bannerRestaurante" class="form-label">Banner</label>
+                        <input type="file" id="bannerRestaurante" name="banner" accept="image/*" class="form-input-file">
+                        <div id="bannerPreview" class="imagem-preview-container" style="display: none;">
+                            <img id="bannerPreviewImg" src="" alt="Banner Preview" class="imagem-preview">
+                            <button type="button" id="removerBanner" class="btn-remover-imagem">✕ Remover</button>
+                        </div>
+                        <p class="form-help-text">Ou cole uma URL:</p>
+                        <input type="url" id="bannerUrlInput" name="bannerUrl" class="form-input" placeholder="https://exemplo.com/banner.jpg">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cardápio PDF -->
+            <div class="form-section">
+                <h2 class="form-section-title">📄 Cardápio em PDF</h2>
+                
+                <div class="form-group">
+                    <label for="cardapioRestaurante" class="form-label">Arquivo PDF do Cardápio</label>
+                    <input type="file" id="cardapioRestaurante" name="cardapio" accept="application/pdf" class="form-input-file">
+                    <div id="cardapioPreview" class="cardapio-preview-container" style="display: none;">
+                        <div class="cardapio-preview-info">
+                            <span class="cardapio-preview-icon">📄</span>
+                            <div class="cardapio-preview-details">
+                                <a id="cardapioPreviewLink" href="" target="_blank" class="cardapio-preview-link">Ver PDF do Cardápio</a>
+                                <small class="form-help-text">Clique para visualizar o PDF atual</small>
+                            </div>
+                            <button type="button" id="removerCardapio" class="btn-remover-imagem">✕ Remover</button>
+                        </div>
+                    </div>
+                    <p class="form-help-text">Ou cole uma URL do PDF:</p>
+                    <input type="url" id="cardapioUrlInput" name="cardapioUrl" class="form-input" placeholder="https://exemplo.com/cardapio.pdf">
+                </div>
+            </div>
+
+            <!-- Alteração de Senha -->
+            <div class="form-section">
+                <h2 class="form-section-title">🔒 Alterar Senha</h2>
+                <p class="form-help-text">Deixe em branco se não desejar alterar a senha</p>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="senhaAtual" class="form-label">Senha Atual</label>
+                        <input type="password" id="senhaAtual" name="senhaAtual" class="form-input" placeholder="Digite sua senha atual">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="novaSenha" class="form-label">Nova Senha</label>
+                        <input type="password" id="novaSenha" name="novaSenha" class="form-input" placeholder="Digite a nova senha">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="confirmarSenha" class="form-label">Confirmar Nova Senha</label>
+                        <input type="password" id="confirmarSenha" name="confirmarSenha" class="form-input" placeholder="Confirme a nova senha">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Termos de Aceite (Somente Leitura) -->
+            <div class="form-section">
+                <h2 class="form-section-title">📄 Termos de Aceite</h2>
+                <p class="form-help-text">Estes termos não podem ser alterados</p>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Aceita Comunicação</label>
+                        <input type="checkbox" id="aceitaComunicacao" name="aceitaComunicacao" disabled>
+                        <small class="form-help-text">Não pode ser alterado</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Aceita Marketing</label>
+                        <input type="checkbox" id="aceitaMarketing" name="aceitaMarketing" disabled>
+                        <small class="form-help-text">Não pode ser alterado</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Aceita Proteção de Dados</label>
+                        <input type="checkbox" id="aceitaProtecaoDados" name="aceitaProtecaoDados" disabled>
+                        <small class="form-help-text">Não pode ser alterado</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botões de Ação -->
+            <div class="form-actions">
+                <button type="button" id="btnCancelar" class="btn-secondary">Cancelar</button>
+                <button type="button" id="btnSalvar" class="btn-primary">Salvar Alterações</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 🔥 SCRIPT PRINCIPAL: Carregado via executeScriptsFromHTML para evitar concorrência -->
+<script src="js/perfil.js"></script>
+

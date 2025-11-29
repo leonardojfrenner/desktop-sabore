@@ -286,8 +286,17 @@ def mapear_endpoint_flask_para_api(flask_endpoint: str) -> str:
         if endpoint.startswith('cardapio/edit/'):
             item_id = endpoint.replace('cardapio/edit/', '')
             return f'itens/{item_id}'
+        if endpoint.startswith('cardapio/delete/'):
+            item_id = endpoint.replace('cardapio/delete/', '')
+            return f'itens/{item_id}'
+        if endpoint.startswith('cardapio/item/'):
+            # Para GET /cardapio/item/{id}, mapear para /itens/{id} na API Java
+            item_id = endpoint.replace('cardapio/item/', '')
+            return f'itens/{item_id}'
         if re.match(r'cardapio/\d+$', endpoint):
-            return 'itens'
+            # Para GET /cardapio/{id}, mapear para /itens/restaurante/{id} na API Java
+            restaurante_id = endpoint.replace('cardapio/', '')
+            return f'itens/restaurante/{restaurante_id}'
 
     return endpoint
 
