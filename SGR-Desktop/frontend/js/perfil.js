@@ -37,6 +37,7 @@ async function carregarDadosRestaurante() {
         // Tentar buscar pelo endpoint de perfil primeiro
         let response = await fetch(`${window.API_BASE_URL}/restaurantes/perfil`, {
             method: 'GET',
+            credentials: 'include', // Envia cookies de sessão
             headers: {
                 'Content-Type': 'application/json'
             }
@@ -47,6 +48,7 @@ async function carregarDadosRestaurante() {
             console.log('⚠️ Perfil não disponível, buscando por ID...');
             response = await fetch(`${window.API_BASE_URL}/restaurantes/${window.restaurante_id}`, {
                 method: 'GET',
+                credentials: 'include', // Envia cookies de sessão
                 headers: {
                     'Content-Type': 'application/json'
                 }
@@ -232,7 +234,9 @@ async function fazerUploadImagem(arquivo, tipo) {
         
         const response = await fetch(`${window.API_BASE_URL}/restaurantes/upload/${tipo}`, {
             method: 'POST',
+            credentials: 'include', // Importante: envia cookies de sessão para autenticação
             body: formData
+            // Não definir Content-Type manualmente - o browser define automaticamente com boundary para FormData
         });
         
         if (!response.ok) {
@@ -284,6 +288,7 @@ async function salvarAlteracoes() {
         
         const response = await fetch(`${window.API_BASE_URL}/restaurantes/${window.restaurante_id}`, {
             method: 'PUT',
+            credentials: 'include', // Envia cookies de sessão
             headers: {
                 'Content-Type': 'application/json'
             },

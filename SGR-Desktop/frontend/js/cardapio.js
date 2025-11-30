@@ -40,7 +40,10 @@ function abrirModal(modo = 'novo', itemId = null) {
             document.getElementById('nomePrato').value = prato.nome;
             document.getElementById('descricaoPrato').value = prato.descricao || '';
             document.getElementById('precoPrato').value = prato.preco;
-            document.getElementById('categoriaPrato').value = prato.categoria || '';
+            
+            // Normalizar categoria para garantir que o select mostre o valor correto
+            const categoriaNormalizada = normalizarCategoriaParaCodigo(prato.categoria || 'OUTROS');
+            document.getElementById('categoriaPrato').value = categoriaNormalizada;
             
             // Se tiver imagem, mostrar preview
             if (prato.imagemUrl) {
@@ -68,11 +71,15 @@ function obterDadosFormulario() {
     // Priorizar URL se houver, senão usar imagem selecionada
     const imagemUrl = document.getElementById('imagemUrlInput').value.trim();
     
+    // Normalizar categoria para garantir que está em UPPERCASE_SNAKE_CASE
+    const categoriaRaw = document.getElementById('categoriaPrato').value.trim();
+    const categoriaNormalizada = normalizarCategoriaParaCodigo(categoriaRaw);
+    
     return {
         nome: document.getElementById('nomePrato').value.trim(),
         descricao: document.getElementById('descricaoPrato').value.trim(),
         preco: parseFloat(document.getElementById('precoPrato').value),
-        categoria: document.getElementById('categoriaPrato').value.trim(),
+        categoria: categoriaNormalizada, // Sempre salvar em UPPERCASE_SNAKE_CASE
         imagemUrl: imagemUrl || imagemUrlAtual || null
     };
 }
@@ -244,7 +251,7 @@ function renderTable(filteredDishes = dishes) {
         const emoji = obterEmojiPrato(dish.nome);
         
         // Formatar categoria para exibição
-        const categoriaFormatada = formatarCategoria(dish.categoria || 'OUTROS');
+        const categoriaFormatada = formatarCategoria(dish.categoria || 'Outros');
 
         const row = document.createElement('tr');
         row.className = isSelected ? 'bg-blue-50' : 'hover:bg-gray-50';
@@ -290,9 +297,38 @@ function renderTable(filteredDishes = dishes) {
     });
 }
 
-// Função para formatar categoria para exibição
+// Função auxiliar para converter para Title Case (primeira letra de cada palavra maiúscula)
+function toTitleCase(str) {
+    if (!str) return '';
+    return str.toLowerCase().split(' ').map(palavra => 
+        palavra.charAt(0).toUpperCase() + palavra.slice(1)
+    ).join(' ');
+}
+
+// Função para formatar categoria para exibição (Title Case -> Formato Amigável)
 function formatarCategoria(categoria) {
+    if (!categoria) return 'Outros';
+    
+    // Mapeamento: valor salvo (Title Case) -> formato de exibição
     const categorias = {
+        'Entrada': 'Entrada',
+        'Prato Principal': 'Prato Principal',
+        'Sobremesa': 'Sobremesa',
+        'Bebida': 'Bebida',
+        'Lanche': 'Lanche',
+        'Salada': 'Salada',
+        'Acompanhamento': 'Acompanhamento',
+        'Outros': 'Outros',
+        // Compatibilidade com formato antigo (minúsculas)
+        'entrada': 'Entrada',
+        'prato principal': 'Prato Principal',
+        'sobremesa': 'Sobremesa',
+        'bebida': 'Bebida',
+        'lanche': 'Lanche',
+        'salada': 'Salada',
+        'acompanhamento': 'Acompanhamento',
+        'outros': 'Outros',
+        // Compatibilidade com formato antigo (UPPERCASE_SNAKE_CASE)
         'ENTRADA': 'Entrada',
         'PRATO_PRINCIPAL': 'Prato Principal',
         'SOBREMESA': 'Sobremesa',
@@ -302,7 +338,76 @@ function formatarCategoria(categoria) {
         'ACOMPANHAMENTO': 'Acompanhamento',
         'OUTROS': 'Outros'
     };
-    return categorias[categoria] || categoria;
+    
+    // Tenta encontrar no mapeamento
+    if (categorias[categoria]) {
+        return categorias[categoria];
+    }
+    
+    // Se não encontrou, tenta normalizar primeiro
+    const categoriaNormalizada = normalizarCategoriaParaCodigo(categoria);
+    if (categorias[categoriaNormalizada]) {
+        return categorias[categoriaNormalizada];
+    }
+    
+    // Se ainda não encontrou, capitaliza a primeira letra de cada palavra
+    return toTitleCase(categoria);
+}
+
+// Função para normalizar categoria para código (qualquer formato -> Title Case sem snake case)
+function normalizarCategoriaParaCodigo(categoria) {
+    if (!categoria) return 'Outros';
+    
+    const categoriaLower = categoria.toLowerCase().trim();
+    
+    // Mapeamento: aceita vários formatos e converte para Title Case
+    const mapeamento = {
+        'entrada': 'Entrada',
+        'prato principal': 'Prato Principal',
+        'prato_principal': 'Prato Principal', // Compatibilidade com snake case
+        'sobremesa': 'Sobremesa',
+        'bebida': 'Bebida',
+        'lanche': 'Lanche',
+        'salada': 'Salada',
+        'acompanhamento': 'Acompanhamento',
+        'outros': 'Outros'
+    };
+    
+    // Se já está no formato correto (Title Case), verifica se é válido
+    const categoriaTitleCase = toTitleCase(categoria);
+    if (categoria === categoriaTitleCase && !categoria.includes('_')) {
+        if (mapeamento[categoriaLower]) {
+            return mapeamento[categoriaLower];
+        }
+        // Se não está no mapeamento mas está em Title Case, retorna como está
+        return categoriaTitleCase;
+    }
+    
+    // Se está em UPPERCASE_SNAKE_CASE, converte para Title Case
+    if (categoria === categoria.toUpperCase() && categoria.includes('_')) {
+        const convertido = toTitleCase(categoriaLower.replace(/_/g, ' '));
+        if (mapeamento[categoriaLower]) {
+            return mapeamento[categoriaLower];
+        }
+        return convertido; // Retorna convertido mesmo se não estiver no mapeamento
+    }
+    
+    // Se tem underscore, remove e converte para Title Case
+    if (categoriaLower.includes('_')) {
+        const convertido = toTitleCase(categoriaLower.replace(/_/g, ' '));
+        if (mapeamento[categoriaLower]) {
+            return mapeamento[categoriaLower];
+        }
+        return convertido;
+    }
+    
+    // Tenta encontrar no mapeamento
+    if (mapeamento[categoriaLower]) {
+        return mapeamento[categoriaLower];
+    }
+    
+    // Se não encontrou, retorna em Title Case como padrão
+    return toTitleCase(categoriaLower) || 'Outros';
 }
 
 // Função para obter emoji baseado no nome do prato
@@ -333,12 +438,12 @@ function filterDishes() {
 
     const filtered = dishes.filter(dish => {
         const dishIdString = String(dish.id); // Converte o ID numérico para string
-        const categoriaFormatada = formatarCategoria(dish.categoria || 'OUTROS').toLowerCase();
+        const categoriaFormatada = formatarCategoria(dish.categoria || 'Outros').toLowerCase();
         
         const matchesSearch = 
             dish.nome.toLowerCase().includes(searchTerm) || // Busca por nome
             dishIdString.includes(searchTerm) ||           // Busca por ID
-            categoriaFormatada.includes(searchTerm) ||     // Busca por categoria
+            categoriaFormatada.includes(searchTerm) ||     // Busca por categoria formatada
             (dish.categoria && dish.categoria.toLowerCase().includes(searchTerm)); // Busca por código da categoria
         
         return matchesSearch;
@@ -472,12 +577,15 @@ async function adicionarPratoAPI(dados) {
     }
     
     // Preparar dados para envio
+    // Garantir que categoria está em UPPERCASE_SNAKE_CASE
+    const categoriaNormalizada = normalizarCategoriaParaCodigo(dados.categoria || 'OUTROS');
+    
     const novoPrato = {
         restaurante_id: window.restaurante_id,
         nome: dados.nome.trim(),
         descricao: (dados.descricao || '').trim() || 'Sem descrição',
         preco: parseFloat(dados.preco),
-        categoria: dados.categoria.trim() || 'OUTROS',
+        categoria: categoriaNormalizada, // Sempre em UPPERCASE_SNAKE_CASE
         imagemUrl: (dados.imagemUrl || '').trim() || null
     };
     
@@ -534,11 +642,14 @@ async function editarPratoAPI(itemId, dados) {
         throw new Error('ID do restaurante inválido. Faça login novamente.');
     }
     
+    // Garantir que categoria está em UPPERCASE_SNAKE_CASE
+    const categoriaNormalizada = normalizarCategoriaParaCodigo(dados.categoria || 'OUTROS');
+    
     const novosDados = {
         nome: dados.nome.trim(),
         descricao: (dados.descricao || '').trim() || '',
         preco: parseFloat(dados.preco),
-        categoria: dados.categoria.trim() || 'OUTROS',
+        categoria: categoriaNormalizada, // Sempre em UPPERCASE_SNAKE_CASE
         imagemUrl: (dados.imagemUrl || '').trim() || '',
         restaurante_id: window.restaurante_id  // IMPORTANTE: Adicionar restaurante_id
     };

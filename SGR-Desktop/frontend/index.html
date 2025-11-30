@@ -500,8 +500,8 @@
                 
                 console.log('🚪 Logout realizado, redirecionando para login...');
                 
-                // Redirecionar para login
-                window.location.href = 'paginas/login.html';
+                // Redirecionar para login (usando replace para não permitir voltar com botão voltar)
+                window.location.replace('paginas/login.html');
             }
         }
 
